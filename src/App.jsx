@@ -1,16 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 import ChatHeader from './components/ChatHeader'
+import ModeToolbar from './components/ModeToolbar'
+import Hero3D from './components/Hero3D'
+import FeatureGrid from './components/FeatureGrid'
 import MessageList from './components/MessageList'
 import MessageInput from './components/MessageInput'
 
 // Simple mock brain to simulate ChatGPT-like responses without a backend
-function generateAssistantReply(prompt, history) {
+function generateAssistantReply(prompt, history, mode) {
   const lower = prompt.toLowerCase()
+  const modeTag = mode === 'browse' ? '[Browsing simulated] ' : mode === 'vision' ? '[Vision simulated] ' : mode === 'code' ? '[Code mode] ' : mode === 'image' ? '[Image mode simulated] ' : ''
+
   if (lower.includes('hello') || lower.includes('hi')) {
-    return "Hello! How can I help you today?"
+    return modeTag + "Hello! How can I help you today?"
   }
   if (lower.startsWith('explain') || lower.includes('what is')) {
     return (
+      modeTag +
       "Here’s a concise explanation:\n\n" +
       "• I break complex ideas into simple steps.\n" +
       "• I can give examples, analogies, or code.\n" +
@@ -19,6 +25,7 @@ function generateAssistantReply(prompt, history) {
   }
   if (lower.includes('code') || lower.includes('javascript') || lower.includes('python')) {
     return (
+      modeTag +
       "Here’s a quick snippet to get you started:\n\n" +
       "JavaScript example:\n" +
       "function greet(name){\n  return `Hello, ${name}!`\n}\n\n" +
@@ -28,6 +35,7 @@ function generateAssistantReply(prompt, history) {
   }
   if (lower.includes('tips') || lower.includes('best practices')) {
     return (
+      modeTag +
       "Some practical tips:\n\n" +
       "1) Start with the simplest working version.\n" +
       "2) Measure before optimizing.\n" +
@@ -38,6 +46,7 @@ function generateAssistantReply(prompt, history) {
   // Default helpful reply
   const lastUser = history.filter(m => m.role === 'user').slice(-1)[0]?.content || ''
   return (
+    modeTag +
     "Here’s a thoughtful response based on your message:\n\n" +
     `“${lastUser}”\n\n` +
     "• I can break this down step-by-step.\n" +
@@ -47,8 +56,9 @@ function generateAssistantReply(prompt, history) {
 }
 
 export default function App() {
+  const [mode, setMode] = useState('chat')
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Hi! I\'m your AI helper. Ask me anything — writing, code, learning, or brainstorming.' }
+    { role: 'assistant', content: "Welcome! Choose a mode above and ask me anything — writing, code, images, or research." }
   ])
   const [isTyping, setIsTyping] = useState(false)
   const abortRef = useRef(null)
@@ -103,19 +113,29 @@ export default function App() {
     setMessages(prev => [...prev, { role: 'assistant', content: '' }])
 
     // Generate mock response and stream it
-    const reply = generateAssistantReply(text, [...messages, { role: 'user', content: text }])
+    const reply = generateAssistantReply(text, [...messages, { role: 'user', content: text }], mode)
     await streamAssistant(reply)
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 text-slate-900 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-white via-slate-50 to-indigo-50 text-slate-900 flex flex-col">
       <ChatHeader onNewChat={handleNewChat} />
 
-      <main className="flex-1">
-        <div ref={listRef} className="max-w-5xl mx-auto h-full overflow-y-auto">
-          <MessageList messages={messages} isTyping={isTyping} />
+      <Hero3D />
+
+      <FeatureGrid />
+
+      <div className="py-6">
+        <ModeToolbar mode={mode} onChange={setMode} />
+      </div>
+
+      <section className="flex-1">
+        <div className="max-w-5xl mx-auto h-full">
+          <div ref={listRef} className="h-full overflow-y-auto">
+            <MessageList messages={messages} isTyping={isTyping} />
+          </div>
         </div>
-      </main>
+      </section>
 
       <div className="border-t border-slate-200 bg-white/70 backdrop-blur sticky bottom-0">
         <MessageInput onSend={onSend} disabled={isTyping} />
